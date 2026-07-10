@@ -74,8 +74,8 @@ function buildLineChart(svg, tooltip, points, opts) {
   svg.innerHTML = "";
   const rect = svg.getBoundingClientRect();
   const W = rect.width || 600;
-  const H = 260;
-  const padL = 44, padR = 12, padT = 14, padB = 26;
+  const H = 340;
+  const padL = 56, padR = 16, padT = 18, padB = 34;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
   const vals = points.map((p) => p.value).filter((v) => v !== null && v !== undefined);
