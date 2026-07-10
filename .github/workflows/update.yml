@@ -8,7 +8,13 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ["docs/**", "scripts/**", ".github/workflows/update.yml"]
+    # docs/data/** is excluded (the "!" entry) so the bot's own data commits
+    # below don't re-trigger this workflow and race with themselves.
+    paths:
+      - "docs/**"
+      - "scripts/**"
+      - ".github/workflows/update.yml"
+      - "!docs/data/**"
 
 permissions:
   contents: write
@@ -50,7 +56,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/data/tufe.json docs/data/meta.json
           git commit -m "TÜFE verisi güncellendi: $(date -u +%Y-%m-%d)"
-          git push
+          for i in 1 2 3 4 5; do
+            git push && break
+            git fetch origin main
+            git rebase origin/main
+            sleep $((RANDOM % 5 + 1))
+          done
 
       - name: meta.json her zaman güncellensin (değişiklik olmasa da)
         if: steps.diff.outputs.changed == 'false'
@@ -60,7 +71,12 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add docs/data/meta.json
             git commit -m "meta.json: kontrol zaman damgası"
-            git push
+            for i in 1 2 3 4 5; do
+              git push && break
+              git fetch origin main
+              git rebase origin/main
+              sleep $((RANDOM % 5 + 1))
+            done
           fi
 
   deploy:
