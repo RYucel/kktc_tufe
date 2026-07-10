@@ -1,0 +1,13 @@
+{
+  "name": "kktc-enflasyon-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KKTC İstatistik Kurumu TÜFE (enflasyon) verilerini otomatik takip eden dashboard",
+  "type": "module",
+  "scripts": {
+    "update": "node scripts/update.mjs"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

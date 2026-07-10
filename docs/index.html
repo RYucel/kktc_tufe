@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KKTC Enflasyon Takip — TÜFE Dashboard</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>KKTC Enflasyon Takip</h1>
+    <p>
+      KKTC İstatistik Kurumu Tüketici Fiyat Endeksi (TÜFE) bültenlerinden otomatik
+      derlenir. Kaynak: <a href="https://istatistik.gov.ct.tr/" target="_blank" rel="noopener">istatistik.gov.ct.tr</a>
+    </p>
+    <p class="meta-line" id="meta-line">Yükleniyor…</p>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>Aylık değişim (%)</h2>
+    <p class="desc">Bir önceki aya göre TÜFE değişim oranı.</p>
+    <div class="chart-controls" data-range-for="monthly">
+      <button data-range="36">Son 3 yıl</button>
+      <button data-range="120">Son 10 yıl</button>
+      <button data-range="all" class="active">Tüm veri</button>
+    </div>
+    <div class="chart-svg-wrap">
+      <svg class="chart" id="chart-monthly"></svg>
+      <div class="tooltip" id="tooltip-monthly"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Yıllık enflasyon (%)</h2>
+    <p class="desc">Bir önceki yılın aynı ayına göre değişim (12 aylık / YoY).</p>
+    <div class="chart-controls" data-range-for="yoy">
+      <button data-range="36">Son 3 yıl</button>
+      <button data-range="180">Son 15 yıl</button>
+      <button data-range="all" class="active">Tüm veri</button>
+    </div>
+    <div class="chart-svg-wrap">
+      <svg class="chart" id="chart-yoy"></svg>
+      <div class="tooltip" id="tooltip-yoy"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Yıl başından bu yana kümülatif (%)</h2>
+    <p class="desc">Bir önceki Aralık ayına göre kümülatif değişim — cari yılın ay ay birikimi.</p>
+    <div class="chart-svg-wrap">
+      <svg class="chart" id="chart-ytd"></svg>
+      <div class="tooltip" id="tooltip-ytd"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>6 aylık dönem kümülatifleri (maaş/ücret endekslemesi)</h2>
+    <p class="desc">
+      Ocak–Haziran ve Temmuz–Aralık dönem kümülatif TÜFE değişimi — KKTC'de maaş/ücret
+      artışları yılda iki kez bu dönemlere göre hesaplanır. İlk yarı, Haziran ayının
+      "Aralık'a göre" değerinden; ikinci yarı Temmuz–Aralık aylık oranlarının
+      zincirlenmesinden hesaplanır.
+    </p>
+    <div class="table-scroll">
+      <table class="data-table" id="table-halfyear">
+        <thead>
+          <tr><th>Yıl</th><th>Ocak–Haziran (%)</th><th>Temmuz–Aralık (%)</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <details class="table-toggle">
+      <summary>Tüm aylık veriyi tablo olarak göster</summary>
+      <div class="table-scroll">
+        <table class="data-table" id="table-full">
+          <thead>
+            <tr><th>Ay</th><th>Aylık (%)</th><th>Yıl başından (%)</th><th>Yıllık (%)</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <footer class="site">
+    <p>
+      Veri kaynağı: KKTC İstatistik Kurumu resmi TÜFE arşiv tablosu (aylık, yıl
+      başından bu yana ve yıllık değişim oranları). Bu sayfa GitHub Actions ile
+      otomatik olarak periyodik kontrol edilir ve yeni bülten yayınlandığında
+      güncellenir.
+    </p>
+  </footer>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

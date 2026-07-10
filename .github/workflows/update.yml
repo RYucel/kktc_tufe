@@ -1,0 +1,84 @@
+name: TÜFE verisini güncelle
+
+on:
+  schedule:
+    # KKTC İstatistik Kurumu TÜFE bültenini genelde ayın 3-5. günü yayınlıyor;
+    # ilk 10 günde her gün 09:00 (Kıbrıs saatiyle ~11:00-12:00) kontrol eder.
+    - cron: "0 9 1-10 * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["docs/**", "scripts/**", ".github/workflows/update.yml"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --no-fund --no-audit
+
+      - run: npm run update
+
+      - id: diff
+        run: |
+          if git diff --quiet -- docs/data/tufe.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Veri değiştiyse commit'le
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data/tufe.json docs/data/meta.json
+          git commit -m "TÜFE verisi güncellendi: $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: meta.json her zaman güncellensin (değişiklik olmasa da)
+        if: steps.diff.outputs.changed == 'false'
+        run: |
+          if ! git diff --quiet -- docs/data/meta.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/data/meta.json
+            git commit -m "meta.json: kontrol zaman damgası"
+            git push
+          fi
+
+  deploy:
+    needs: update-data
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

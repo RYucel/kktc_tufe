@@ -1,0 +1,236 @@
+:root {
+  --surface-1: #fcfcfb;
+  --page: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --series-1: #2a78d6;
+  --series-1-wash: rgba(42, 120, 214, 0.10);
+  --good: #006300;
+  --critical: #d03b3b;
+  --border: rgba(11, 11, 11, 0.10);
+  --card-radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --series-1: #3987e5;
+    --series-1-wash: rgba(57, 135, 229, 0.14);
+    --good: #0ca30c;
+    --critical: #e66767;
+    --border: rgba(255, 255, 255, 0.10);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.4;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+header.top {
+  margin-bottom: 28px;
+}
+
+header.top h1 {
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+
+header.top p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+header.top a {
+  color: var(--series-1);
+}
+
+.meta-line {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 16px 18px;
+}
+
+.tile .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.tile .value {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.tile .value.good { color: var(--good); }
+.tile .value.critical { color: var(--critical); }
+
+.tile .sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+section.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 20px 22px 8px;
+  margin-bottom: 24px;
+}
+
+section.card h2 {
+  font-size: 16px;
+  margin: 0 0 2px;
+}
+
+section.card .desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chart-controls button {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.chart-controls button.active {
+  background: var(--series-1-wash);
+  border-color: var(--series-1);
+  color: var(--text-primary);
+}
+
+.chart-svg-wrap {
+  position: relative;
+}
+
+svg.chart {
+  width: 100%;
+  height: 260px;
+  display: block;
+  overflow: visible;
+}
+
+.tick-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.gridline { stroke: var(--gridline); stroke-width: 1; }
+.baseline { stroke: var(--baseline); stroke-width: 1; }
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  transition: opacity 0.08s ease;
+  z-index: 5;
+}
+
+.tooltip .tt-date { color: var(--text-muted); margin-bottom: 2px; }
+.tooltip .tt-val { font-weight: 600; }
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin: 8px 0 16px;
+}
+
+table.data-table th, table.data-table td {
+  text-align: right;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gridline);
+}
+
+table.data-table th:first-child, table.data-table td:first-child {
+  text-align: left;
+}
+
+table.data-table thead th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+details.table-toggle summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--series-1);
+  margin: 4px 0 4px;
+  user-select: none;
+}
+
+.table-scroll {
+  max-height: 320px;
+  overflow: auto;
+}
+
+footer.site {
+  margin-top: 40px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+footer.site a { color: var(--text-secondary); }
+
+@media (max-width: 480px) {
+  .tile .value { font-size: 24px; }
+}
