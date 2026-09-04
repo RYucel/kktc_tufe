@@ -2,12 +2,9 @@ name: TÜFE verisini güncelle
 
 on:
   schedule:
-    # KKTC İstatistik Kurumu TÜFE bültenini genelde ayın 3-5. günü yayınlıyor,
-    # ancak zaman zaman gecikiyor. Yalnızca ilk 10 gün kontrol edildiğinde
-    # geciken bir bülten bir sonraki aya kadar kaçırılıyordu; bu yüzden
-    # her gün 09:00 UTC'de (Kıbrıs saatiyle ~11:00-12:00) kontrol edilir.
-    # Veri değişmediğinde commit/deploy yapılmaz, bu yüzden maliyeti yoktur.
-    - cron: "0 9 * * *"
+    # KKTC İstatistik Kurumu TÜFE bültenini genelde ayın 3-5. günü yayınlıyor;
+    # ilk 10 günde her gün 09:00 (Kıbrıs saatiyle ~11:00-12:00) kontrol eder.
+    - cron: "0 9 1-10 * *"
   workflow_dispatch: {}
   push:
     branches: [main]
