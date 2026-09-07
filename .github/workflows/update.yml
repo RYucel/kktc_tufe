@@ -2,9 +2,19 @@ name: TÜFE verisini güncelle
 
 on:
   schedule:
-    # KKTC İstatistik Kurumu TÜFE bültenini genelde ayın 3-5. günü yayınlıyor;
-    # ilk 10 günde her gün 09:00 (Kıbrıs saatiyle ~11:00-12:00) kontrol eder.
-    - cron: "0 9 1-10 * *"
+    # Kurum bülteni yasa geregi ayin ilk haftasinda, pratikte mesai bitimine
+    # yakin (~15:30 KKTC) yayinlaniyor. Kontrolun DAIMA yayindan sonra
+    # dusmesi gerekir; aksi halde bulten ertesi gune sarkiyor.
+    #
+    # Olculen ornek: 4 Agustos 2026'da bulten 11:31 UTC'de yayinlandi, o
+    # gunku calisma 11:23 UTC'de oldu (8 dakika once) ve veri ancak ertesi
+    # gun alindi.
+    #
+    # GitHub zamanlanmis isleri 0,6-5,0 saat geciktiriyor (16 calisma uzerinde
+    # olculdu), bu yuzden nominal saat bu payi kaldiracak kadar geç secildi:
+    #   nominal 14:00 UTC -> gercek calisma yaz 17:36-22:00, kis 16:36-21:00 KKTC
+    # Her iki durumda da 15:30 yayin saatinin guvenle sonrasinda kaliyor.
+    - cron: "0 14 1-10 * *"
   workflow_dispatch: {}
   push:
     branches: [main]
