@@ -1,0 +1,54 @@
+# Bu depodaki veri her degistiginde TUFE_API deposunu ANINDA tetikler.
+#
+# Neden gerekli: API normalde gunluk cron ile bu depoyu yokluyor, ancak
+# GitHub zamanlanmis isleri 0,6-5,0 saat geciktirdigi icin yeni veri
+# yayina 2-8 saat gecikmeyle giriyordu. Bu tetikleyici zinciri kaldirir:
+# buradaki commit'ten ~1 dakika sonra API guncellenmis olur.
+#
+# Kurulum (tamamlandi): API_REPO_DISPATCH_TOKEN secret'i, yalnizca
+# RYucel/kktc_tufe_api deposuna "Contents: Read and write" izni verilmis
+# ince ayarli bir token tutar. POST /repos/.../dispatches ucunun
+# gerektirdigi tek izin budur.
+#
+# Bu workflow calismasa bile veri kaybi olmaz: API'nin gunluk 20:00 UTC
+# cron'u yedek olarak devrede kalir, yalnizca gecikme geri gelir.
+
+name: TÜFE API'sini Tetikle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Elle yuklenen sepet madde fiyatlari
+      - "GRETL_TUFE.csv"
+      # Bu deponun cron'unun resmi siteden cektigi aylik TUFE serisi
+      - "docs/data/tufe.json"
+  workflow_dispatch: {}
+
+# Ust uste gelen commit'lerde tek tetikleme yeter
+concurrency:
+  group: trigger-api-sync
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: TUFE_API deposunda senkronizasyonu baslat
+        env:
+          GH_TOKEN: ${{ secrets.API_REPO_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::API_REPO_DISPATCH_TOKEN secret'i tanimli degil."
+            exit 1
+          fi
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/RYucel/kktc_tufe_api/dispatches \
+            -f event_type=csv-updated \
+            -f 'client_payload[source]=kktc_tufe' \
+            -f "client_payload[commit]=${{ github.sha }}"
+
+          echo "TUFE_API senkronizasyonu tetiklendi (commit ${{ github.sha }})."
