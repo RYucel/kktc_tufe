@@ -6,6 +6,10 @@
 import { writeFile, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import http from "node:http";
+import https from "node:https";
+import tls from "node:tls";
+import crypto from "node:crypto";
 import XLSX from "xlsx";
 
 const RSS_URL = "https://istatistik.gov.ct.tr/HABERLER/rss/category/4213/haberler";
@@ -22,16 +26,103 @@ const MONTHS = [
 ];
 const MONTH_INDEX = new Map(MONTHS.map((m, i) => [m, i + 1]));
 
+// --- TLS: eksik ara sertifika (incomplete chain) desteği -------------------
+// istatistik.gov.ct.tr sunucusu TLS el sıkışmasında ara (intermediate) sertifikayı
+// göndermiyor. Tarayıcılar bunu AIA ile kendileri tamamlar, Node ise
+// UNABLE_TO_VERIFY_LEAF_SIGNATURE hatası verir. Doğrulamayı KAPATMADAN çözüyoruz:
+// sunucu sertifikasındaki "CA Issuers" (AIA) adresinden eksik ara sertifikayı
+// indirip güvenilir kök listesine ek olarak veriyor ve isteği tam doğrulamayla
+// tekrarlıyoruz. Sertifika zinciri değişse bile kendiliğinden uyum sağlar.
+const CHAIN_ERRORS = new Set([
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_GET_ISSUER_CERT",
+]);
+const extraCaByHost = new Map();
+
+function rawGet(url, { ca, rejectUnauthorized = true } = {}) {
+  const lib = url.startsWith("https:") ? https : http;
+  return new Promise((resolve, reject) => {
+    const req = lib.get(
+      url,
+      { headers: { "User-Agent": UA }, ca, rejectUnauthorized, timeout: 60_000 },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () =>
+          resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks), socket: res.socket })
+        );
+        res.on("error", reject);
+      }
+    );
+    req.on("timeout", () => req.destroy(new Error(`GET ${url} zaman aşımı`)));
+    req.on("error", reject);
+  });
+}
+
+// Sunucunun yaprak sertifikasını (doğrulamasız, sadece okumak için) alır ve
+// AIA "CA Issuers" adresinden ara sertifika(lar)ı PEM olarak indirir.
+async function resolveIntermediates(host) {
+  const leaf = await new Promise((resolve, reject) => {
+    const sock = tls.connect({ host, port: 443, servername: host, rejectUnauthorized: false }, () => {
+      const cert = sock.getPeerCertificate(true);
+      sock.end();
+      resolve(cert);
+    });
+    sock.setTimeout(30_000, () => sock.destroy(new Error(`${host}: TLS zaman aşımı`)));
+    sock.on("error", reject);
+  });
+
+  const pems = [];
+  let infoAccess = leaf?.infoAccess;
+  for (let depth = 0; depth < 4 && infoAccess; depth++) {
+    const uri = (infoAccess["CA Issuers - URI"] || [])[0];
+    if (!uri) break;
+    const res = await rawGet(uri);
+    if (res.status !== 200) throw new Error(`AIA ${uri} -> ${res.status}`);
+    let x509;
+    try {
+      x509 = new crypto.X509Certificate(res.body); // DER veya PEM
+    } catch {
+      break; // PKCS#7 vb. — desteklenmiyor
+    }
+    pems.push(x509.toString());
+    console.log(`Ara sertifika eklendi: ${x509.subject.replace(/\n/g, ", ")}`);
+    // Kök sertifikaya ulaştıysak dur
+    if (x509.subject === x509.issuer) break;
+    const legacy = x509.toLegacyObject();
+    infoAccess = legacy.infoAccess;
+    if (tls.rootCertificates.some((r) => new crypto.X509Certificate(r).subject === x509.issuer)) break;
+  }
+  if (!pems.length) throw new Error(`${host}: AIA ile ara sertifika bulunamadı`);
+  return [...tls.rootCertificates, ...pems];
+}
+
+async function getBuffer(url, redirects = 5) {
+  const host = new URL(url).hostname;
+  let res;
+  try {
+    res = await rawGet(url, { ca: extraCaByHost.get(host) });
+  } catch (err) {
+    if (!CHAIN_ERRORS.has(err.code) || extraCaByHost.has(host)) throw err;
+    console.log(`${host}: sertifika zinciri eksik (${err.code}), AIA ile tamamlanıyor...`);
+    extraCaByHost.set(host, await resolveIntermediates(host));
+    res = await rawGet(url, { ca: extraCaByHost.get(host) });
+  }
+  if (res.status >= 300 && res.status < 400 && res.headers.location) {
+    if (redirects <= 0) throw new Error(`GET ${url} -> çok fazla yönlendirme`);
+    return getBuffer(new URL(res.headers.location, url).href, redirects - 1);
+  }
+  if (res.status < 200 || res.status >= 300) throw new Error(`GET ${url} -> ${res.status}`);
+  return res.body;
+}
+
 async function fetchText(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA } });
-  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-  return res.text();
+  return (await getBuffer(url)).toString("utf8");
 }
 
 async function fetchBuffer(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA } });
-  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+  return getBuffer(url);
 }
 
 function parseRssItems(xml) {
