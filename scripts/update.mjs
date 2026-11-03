@@ -86,10 +86,14 @@ async function resolveIntermediates(host) {
     } catch {
       break; // PKCS#7 vb. — desteklenmiyor
     }
+    // Kendinden imzalı (kök) sertifika internetten indirildiyse ASLA güvenme:
+    // güven yalnızca Node'un yerleşik kök listesinden gelmeli.
+    if (x509.subject === x509.issuer) {
+      console.log(`İndirilen kök sertifika yok sayıldı: ${x509.subject.replace(/\n/g, ", ")}`);
+      break;
+    }
     pems.push(x509.toString());
     console.log(`Ara sertifika eklendi: ${x509.subject.replace(/\n/g, ", ")}`);
-    // Kök sertifikaya ulaştıysak dur
-    if (x509.subject === x509.issuer) break;
     const legacy = x509.toLegacyObject();
     infoAccess = legacy.infoAccess;
     if (tls.rootCertificates.some((r) => new crypto.X509Certificate(r).subject === x509.issuer)) break;
